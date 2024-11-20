@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from sympy import symbols, sympify, lambdify, Integral, latex, nsimplify, S
+from sympy import symbols, sympify, lambdify, Integral, latex, nsimplify
 from sympy.core.sympify import SympifyError
 
 # 제목 설정
@@ -20,42 +20,44 @@ if func_input and a_input and b_input:
         # 함수식을 SymPy 객체로 변환
         func_sympy = sympify(func_input)
         func_lambda = lambdify(x, func_sympy, modules=['numpy'])
-        
+
         # 적분 구간을 SymPy 객체로 변환
         a_sympy = sympify(a_input)
         b_sympy = sympify(b_input)
-        
+
         # 그래프 그리기 위한 x 값 생성 (실수 범위)
         a_float = float(a_sympy.evalf())
         b_float = float(b_sympy.evalf())
         x_vals = np.linspace(a_float, b_float, 400)
         y_vals = func_lambda(x_vals)
-        
+
         # 그래프 설정
         fig, ax = plt.subplots()
         ax.plot(x_vals, y_vals, label=f'$y = {latex(func_sympy)}$')
-        
+
         # 넓이 계산된 부분 색칠하기
-        ax.fill_between(x_vals, y_vals, where=(y_vals>=0), color='skyblue', alpha=0.5, interpolate=True)
-        ax.fill_between(x_vals, y_vals, where=(y_vals<=0), color='lightcoral', alpha=0.5, interpolate=True)
-        
+        ax.fill_between(x_vals, y_vals, where=(y_vals >= 0), color='skyblue', alpha=0.5, interpolate=True)
+        ax.fill_between(x_vals, y_vals, where=(y_vals <= 0), color='lightcoral', alpha=0.5, interpolate=True)
+
         # 축 설정
         ax.axhline(0, color='black', linewidth=0.5)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.legend()
-        
+
         # 그래프 출력
         st.pyplot(fig)
-        
+
         # 넓이 계산
         area = Integral(func_sympy, (x, a_sympy, b_sympy)).doit()
         area_simplified = nsimplify(area, rational=True)
         area_latex = latex(area_simplified)
-        
-        # 결과 출력
-        st.markdown(f'계산된 넓이: $$\\int_{{{latex(a_sympy)}}}^{{{latex(b_sympy)}}} {latex(func_sympy)}\\,dx = {area_latex}$$')
-        
+
+        # 결과 출력 (글자 크기 조절 및 \displaystyle 사용)
+        st.write('계산된 넓이:')
+        st.latex(r'\displaystyle \int_{%s}^{%s} %s\,dx = %s' % (
+            latex(a_sympy), latex(b_sympy), latex(func_sympy), area_latex))
+
     except SympifyError:
         st.error('올바른 함수식과 적분 구간을 입력해주세요.')
     except Exception as e:
