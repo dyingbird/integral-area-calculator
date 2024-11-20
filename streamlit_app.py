@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from sympy import symbols, sympify, lambdify, Integral, latex, nsimplify
+from sympy import symbols, sympify, lambdify, Integral, latex, nsimplify, Abs
 from sympy.core.sympify import SympifyError
 
 # 제목 설정
@@ -19,7 +19,9 @@ if func_input and a_input and b_input:
     try:
         # 함수식을 SymPy 객체로 변환
         func_sympy = sympify(func_input)
+        func_abs_sympy = Abs(func_sympy)  # 함수의 절댓값을 취함
         func_lambda = lambdify(x, func_sympy, modules=['numpy'])
+        func_abs_lambda = lambdify(x, func_abs_sympy, modules=['numpy'])
 
         # 적분 구간을 SymPy 객체로 변환
         a_sympy = sympify(a_input)
@@ -30,14 +32,15 @@ if func_input and a_input and b_input:
         b_float = float(b_sympy.evalf())
         x_vals = np.linspace(a_float, b_float, 400)
         y_vals = func_lambda(x_vals)
+        y_abs_vals = np.abs(y_vals)  # 함수값의 절댓값
 
         # 그래프 설정
         fig, ax = plt.subplots()
         ax.plot(x_vals, y_vals, label=f'$y = {latex(func_sympy)}$')
 
-        # 넓이 계산된 부분 색칠하기
-        ax.fill_between(x_vals, y_vals, where=(y_vals >= 0), color='skyblue', alpha=0.5, interpolate=True)
-        ax.fill_between(x_vals, y_vals, where=(y_vals <= 0), color='lightcoral', alpha=0.5, interpolate=True)
+        # 넓이 계산된 부분 색칠하기 (절댓값 사용)
+        ax.fill_between(x_vals, 0, y_vals, where=(y_vals >= 0), color='skyblue', alpha=0.5, interpolate=True)
+        ax.fill_between(x_vals, 0, y_vals, where=(y_vals <= 0), color='lightcoral', alpha=0.5, interpolate=True)
 
         # 축 설정
         ax.axhline(0, color='black', linewidth=0.5)
@@ -48,14 +51,14 @@ if func_input and a_input and b_input:
         # 그래프 출력
         st.pyplot(fig)
 
-        # 넓이 계산
-        area = Integral(func_sympy, (x, a_sympy, b_sympy)).doit()
+        # 넓이 계산 (함수의 절댓값을 적분)
+        area = Integral(Abs(func_sympy), (x, a_sympy, b_sympy)).doit()
         area_simplified = nsimplify(area, rational=True)
         area_latex = latex(area_simplified)
 
         # 결과 출력 (글자 크기 조절 및 \displaystyle 사용)
         st.write('계산된 넓이:')
-        st.latex(r'\displaystyle \int_{%s}^{%s} %s\,dx = %s' % (
+        st.latex(r'\displaystyle \int_{%s}^{%s} \left| %s \right|\,dx = %s' % (
             latex(a_sympy), latex(b_sympy), latex(func_sympy), area_latex))
 
     except SympifyError:
